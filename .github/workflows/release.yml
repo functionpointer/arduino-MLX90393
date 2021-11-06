@@ -19,6 +19,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: GitHub Tag
+        uses: mathieudutour/github-tag-action@v5.6
+        with:
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
+          # Which type of bump to use when none explicitly provided (default: `patch`).
+          default_bump: false
+          # A prefix to the tag name (default: `v`).
+          tag_prefix: "v"
+          custom_tag: ${{ github.event.inputs.versionnum }}
+
       - uses: "marvinpinto/action-automatic-releases@latest"
         name: "create a release"
         with:
