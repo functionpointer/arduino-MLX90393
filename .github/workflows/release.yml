@@ -19,12 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Create a Release
-        uses: elgohr/Github-Release-Action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        name: "create a release"
         with:
-          args: MyReleaseMessage
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
 
       - name: prepare manifest
         uses: danielr1996/envsubst-action@1.1.0
