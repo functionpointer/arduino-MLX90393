@@ -1,6 +1,6 @@
 {
   "name": "arduino-MLX90393",
-  "version": ${VERSION},
+  "version": "${VERSION}",
   "author": "functionpointer",
   "maintainer": "functionpointer <suspendfunction@gmail.com>",
   "sentence": "MLX90393 magnetometer library by tedyapo",
