@@ -1,13 +1,25 @@
 {
   "name": "arduino-MLX90393",
   "version": "${VERSION}",
-  "author": "functionpointer",
-  "maintainer": "functionpointer <suspendfunction@gmail.com>",
+  "authors": [
+    {
+      "name": "functionpointer",
+      "email": "suspendfunction@gmail.com",
+      "url": "https://github.com/functionpointer",
+      "maintainer": true
+    },
+    {
+      "name": "tedyapo",
+      "email": "ted.yapo@gmail.com",
+      "url": "https://github.com/tedyapo"
+    }
+  ],
   "sentence": "MLX90393 magnetometer library by tedyapo",
   "paragraph": "MLX90393 magnetometer library by tedyapo",
   "category": "Sensors",
   "url": "https://github.com/functionpointer/arduino-MLX90393",
   "architectures" : "*",
+  "frameworks": ["Arduino"],
   "export": {
     "exclude":
     [
