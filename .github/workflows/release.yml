@@ -35,7 +35,7 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: false
-          title: "Development Build"
+          title: "arduino-MLX90393 ${{ github.event.inputs.versionnum }}"
 
       - name: prepare manifest
         uses: danielr1996/envsubst-action@1.1.0
