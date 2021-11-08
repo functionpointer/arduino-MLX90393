@@ -28,5 +28,11 @@
       ".github/",
       "__pycache__"
     ]
-  }
+  },
+  "dependencies": [
+    {
+      "name": "Wire",
+      "version": "*"
+    }
+  ]
 }
