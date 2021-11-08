@@ -3,20 +3,21 @@
   "version": "${VERSION}",
   "authors": [
     {
+      "name": "tedyapo",
+      "email": "ted.yapo@gmail.com",
+      "url": "https://github.com/tedyapo"
+    },
+    {
       "name": "functionpointer",
       "email": "suspendfunction@gmail.com",
       "url": "https://github.com/functionpointer",
       "maintainer": true
-    },
-    {
-      "name": "tedyapo",
-      "email": "ted.yapo@gmail.com",
-      "url": "https://github.com/tedyapo"
     }
   ],
   "sentence": "MLX90393 magnetometer library by tedyapo",
   "paragraph": "MLX90393 magnetometer library by tedyapo",
   "category": "Sensors",
+  "keywords": ["sensors", "melexis"],
   "url": "https://github.com/functionpointer/arduino-MLX90393",
   "architectures" : "*",
   "frameworks": ["Arduino"],
