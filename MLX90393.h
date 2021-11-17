@@ -9,8 +9,11 @@
 #ifndef MLX90393_H_INCLUDED
 #define MLX90393_H_INCLUDED
 
-#include <Arduino.h>
-#include <Wire.h>
+#include "MLX909393_i2c.h"
+
+#ifndef MLX90393_NO_WIRE
+#include "MLX90393_wire.h"
+#endif
 
 class MLX90393
 {
@@ -84,7 +87,10 @@ public:
   uint16_t convDelayMillis();
 
   // higher-level API
+  #ifndef MLX90393_NO_WIRE
   uint8_t begin(uint8_t A1 = 0, uint8_t A0 = 0, int DRDY_pin = -1, TwoWire &wirePort = Wire);
+  #endif
+  uint8_t begin_custom_i2c(MLX90393_i2c *i2cPort, uint8_t A1, uint8_t A0, int DRDY_pin);
 
   // returns B (x,y,z) in uT, temperature in C
   uint8_t readData(txyz& data);
@@ -114,12 +120,11 @@ public:
   uint8_t setWOTThreshold(uint16_t wot_thresh);
 
 private:
-  uint8_t I2C_address;
   int DRDY_pin;
 
   // parameters are cached to avoid reading them from sensor unnecessarily
   struct cache_t {
-    enum { SIZE = 3, ALL_DIRTY_MASK = 1 << (SIZE + 1) - 1};
+    enum { SIZE = 3, ALL_DIRTY_MASK = (1 << (SIZE + 1)) - 1};
     uint8_t dirty;
     uint16_t reg[SIZE];
   } cache;
@@ -135,8 +140,11 @@ private:
   float base_xy_sens_hc0xc;
   float base_z_sens_hc0xc;
 
-  private:
-    TwoWire *_i2cPort; //The generic connection to user's chosen I2C hardware
+  MLX90393_i2c *i2cPort_ = nullptr;
+
+  #ifndef MLX90393_NO_WIRE
+  MLX909303_wire wirePort_;
+  #endif
 
 };
 #endif // #ifndef MLX90393_H_INCLUDED

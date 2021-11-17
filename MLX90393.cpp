@@ -11,8 +11,6 @@
 MLX90393::
 MLX90393()
 {
-  I2C_address = 0;
-
   cache_invalidate();
 
   // gain steps derived from datasheet section 15.1.4 tables
@@ -34,17 +32,15 @@ MLX90393()
   base_z_sens_hc0xc = 0.242f;
 }
 
-uint8_t
-MLX90393::
-begin(uint8_t A1, uint8_t A0, int DRDY_pin, TwoWire &wirePort)
+uint8_t MLX90393::begin_custom_i2c(MLX90393_i2c *i2cPort, uint8_t A1, uint8_t A0, int DRDY_pin)
 {
-  I2C_address = I2C_BASE_ADDR | (A1?2:0) | (A0?1:0);
+  this->i2cPort_ = i2cPort;
+  uint8_t I2C_address = I2C_BASE_ADDR | (A1?2:0) | (A0?1:0);
+  this->i2cPort_->set_address(I2C_address);
   this->DRDY_pin = DRDY_pin;
   if (DRDY_pin >= 0){
     pinMode(DRDY_pin, INPUT);
   }
-
-  _i2cPort = &wirePort; //Grab which port the user wants us to use
 
   uint8_t status1 = checkStatus(reset());
   uint8_t status2 = setGainSel(7);
@@ -55,6 +51,17 @@ begin(uint8_t A1, uint8_t A0, int DRDY_pin, TwoWire &wirePort)
 
   return status1 | status2 | status3 | status4 | status5 | status6;
 }
+
+#ifndef MLX90393_NO_WIRE
+uint8_t
+MLX90393::
+begin(uint8_t A1, uint8_t A0, int DRDY_pin, TwoWire &wirePort)
+{
+  this->wirePort_.set_twoWire(&wirePort);
+  MLX90393_i2c *i2c = &this->wirePort_; 
+  return this->begin_custom_i2c(i2c, A1, A0, DRDY_pin);
+}
+#endif
 
 void
 MLX90393::
@@ -120,12 +127,11 @@ uint8_t
 MLX90393::
 sendCommand(uint8_t cmd)
 {
-  _i2cPort->beginTransmission(I2C_address);
-  if (_i2cPort->write(cmd) != 1){ return STATUS_ERROR; }
-  if (_i2cPort->endTransmission()){ return STATUS_ERROR; }
-  if (_i2cPort->requestFrom(I2C_address, uint8_t(1)) != 1){ return STATUS_ERROR; }
-
-  return _i2cPort->read();
+  uint8_t ret = 0;
+  if(!this->i2cPort_->transceive(&cmd, 1, &ret, 1)) {
+    return STATUS_ERROR;
+  }
+  return ret;
 }
 
 uint8_t
@@ -174,13 +180,6 @@ MLX90393::
 readMeasurement(uint8_t zyxt_flags, txyzRaw& txyz_result)
 {
   uint8_t cmd = CMD_READ_MEASUREMENT | (zyxt_flags & 0xf);
-  _i2cPort->beginTransmission(I2C_address);
-  if(_i2cPort->write(cmd) != 1){
-    return STATUS_ERROR;
-  }
-  if (_i2cPort->endTransmission()){
-    return STATUS_ERROR;
-  }
 
   uint8_t buffer[9];
   uint8_t count = 1 + (((zyxt_flags & Z_FLAG)?2:0) +
@@ -188,15 +187,9 @@ readMeasurement(uint8_t zyxt_flags, txyzRaw& txyz_result)
                        ((zyxt_flags & X_FLAG)?2:0) +
                        ((zyxt_flags & T_FLAG)?2:0) );
 
-  if(_i2cPort->requestFrom(I2C_address, count) != count){
+
+  if(!this->i2cPort_->transceive(&cmd, 1, buffer, (size_t)count)) {
     return STATUS_ERROR;
-  }
-  for (uint8_t i=0; i < count; i++){
-    if (_i2cPort->available()){
-      buffer[i] = _i2cPort->read();
-    } else {
-      return STATUS_ERROR;
-    }
   }
 
   uint8_t i = 1;
@@ -232,23 +225,15 @@ uint8_t
 MLX90393::
 readRegister(uint8_t address, uint16_t& data)
 {
-  _i2cPort->beginTransmission(I2C_address);
-  if (_i2cPort->write(CMD_READ_REGISTER) != 1){ return STATUS_ERROR; }
-  if (_i2cPort->write((address & 0x3f)<<2) != 1){ return STATUS_ERROR; }
-  if (_i2cPort->endTransmission()){ return STATUS_ERROR; }
-  if (_i2cPort->requestFrom(I2C_address, uint8_t(3)) != 3){ return STATUS_ERROR; }
+  uint8_t txbuf[] = {CMD_READ_REGISTER, (uint8_t)((address & 0x3f)<<2)};
+  uint8_t rxbuf[3] = {0};
+  if(!this->i2cPort_->transceive(txbuf, sizeof(txbuf), rxbuf, sizeof(rxbuf))) {
+    return STATUS_ERROR;
+  }
 
-  uint8_t status;
-  if (!_i2cPort->available()){ return STATUS_ERROR; }
-  status = _i2cPort->read();
-
-  uint8_t b_h;
-  if (!_i2cPort->available()){ return STATUS_ERROR; }
-  b_h = _i2cPort->read();
-
-  uint8_t b_l;
-  if (!_i2cPort->available()){ return STATUS_ERROR; }
-  b_l = _i2cPort->read();
+  uint8_t status = rxbuf[0];
+  uint8_t b_h = rxbuf[1];
+  uint8_t b_l = rxbuf[2];
 
   data = (uint16_t(b_h)<<8) | b_l;
   cache_set(address, data);
@@ -260,17 +245,12 @@ MLX90393::
 writeRegister(uint8_t address, uint16_t data)
 {
   cache_invalidate(address);
+  uint8_t txBuf[] = {CMD_WRITE_REGISTER, (uint8_t)(data & 0xff00) >> 8, (uint8_t)(data & 0x00ff), (uint8_t)((address & 0x3f)<<2)};
+  uint8_t status = 0;
+  if(!this->i2cPort_->transceive(txBuf, sizeof(txBuf), &status, 1)) {
+    return STATUS_ERROR;
+  }
 
-  _i2cPort->beginTransmission(I2C_address);
-  if (_i2cPort->write(CMD_WRITE_REGISTER) != 1){ return STATUS_ERROR; }
-  if (_i2cPort->write((data & 0xff00) >> 8) != 1){ return STATUS_ERROR; }
-  if (_i2cPort->write(data & 0x00ff) != 1){ return STATUS_ERROR; }
-  if (_i2cPort->write((address & 0x3f)<<2) != 1){ return STATUS_ERROR; }
-  if (_i2cPort->endTransmission()){ return STATUS_ERROR; }
-  if (_i2cPort->requestFrom(I2C_address, uint8_t(1)) != 1){ return STATUS_ERROR; }
-  if (!_i2cPort->available()){ return STATUS_ERROR; }
-
-  const uint8_t status = _i2cPort->read();
   if (isOK(status)) {
     cache_set(address, data);
   }
@@ -561,8 +541,8 @@ setResolution(uint8_t res_x, uint8_t res_y, uint8_t res_z)
   uint16_t old_val;
   uint8_t status1 = readRegister(RES_XYZ_REG, old_val);
   uint8_t status2 = writeRegister(RES_XYZ_REG,
-                                  (old_val & ~RES_XYZ_MASK) |
-                                  (res_xyz << RES_XYZ_SHIFT) & RES_XYZ_MASK);
+                                  ((old_val & ~RES_XYZ_MASK) |
+                                  (res_xyz << RES_XYZ_SHIFT)) & RES_XYZ_MASK);
   return checkStatus(status1) | checkStatus(status2);
 }
 
