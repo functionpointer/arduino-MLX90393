@@ -1,5 +1,6 @@
 #pragma once
-#include "MLX909393_i2c.h"
+#ifdef USE_ARDUINO
+#include "MLX90393_i2c.h"
 #include <Wire.h>
 
 
@@ -11,4 +12,5 @@ class MLX909303_wire : public MLX90393_i2c {
     TwoWire *i2cPort_ = nullptr;
 
 };
+#endif
 

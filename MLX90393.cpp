@@ -52,7 +52,7 @@ uint8_t MLX90393::begin_custom_i2c(MLX90393_i2c *i2cPort, uint8_t A1, uint8_t A0
   return status1 | status2 | status3 | status4 | status5 | status6;
 }
 
-#ifndef MLX90393_NO_WIRE
+#ifdef USE_ARDUINO
 uint8_t
 MLX90393::
 begin(uint8_t A1, uint8_t A0, int DRDY_pin, TwoWire &wirePort)

@@ -1,4 +1,5 @@
 
+#ifdef USE_ARDUINO
 #include "MLX90393_wire.h"
 #include "stdint.h"
 
@@ -23,3 +24,5 @@ bool MLX909303_wire::transceive(uint8_t *request, size_t request_size, uint8_t *
   }
   return true;
 }
+
+#endif

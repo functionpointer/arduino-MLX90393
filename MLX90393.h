@@ -9,10 +9,11 @@
 #ifndef MLX90393_H_INCLUDED
 #define MLX90393_H_INCLUDED
 
-#include "MLX909393_i2c.h"
+#include "MLX90393_i2c.h"
 
-#ifndef MLX90393_NO_WIRE
+#ifdef USE_ARDUINO
 #include "MLX90393_wire.h"
+#include <Wire.h>
 #endif
 
 class MLX90393
@@ -87,7 +88,7 @@ public:
   uint16_t convDelayMillis();
 
   // higher-level API
-  #ifndef MLX90393_NO_WIRE
+  #ifdef USE_ARDUINO
   uint8_t begin(uint8_t A1 = 0, uint8_t A0 = 0, int DRDY_pin = -1, TwoWire &wirePort = Wire);
   #endif
   uint8_t begin_custom_i2c(MLX90393_i2c *i2cPort, uint8_t A1, uint8_t A0, int DRDY_pin);
@@ -142,7 +143,7 @@ private:
 
   MLX90393_i2c *i2cPort_ = nullptr;
 
-  #ifndef MLX90393_NO_WIRE
+  #ifdef USE_ARDUINO
   MLX909303_wire wirePort_;
   #endif
 
