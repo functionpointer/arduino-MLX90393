@@ -20,7 +20,7 @@
   "keywords": ["sensors", "melexis"],
   "url": "https://github.com/functionpointer/arduino-MLX90393",
   "architectures" : "*",
-  "frameworks": ["Arduino"],
+  "frameworks": ["Arduino", "espidf"],
   "export": {
     "exclude":
     [
@@ -28,5 +28,12 @@
       ".github/",
       "__pycache__"
     ]
-  }
+  },
+  "dependencies": [
+    {
+      "name": "Wire",
+      "version": "*",
+      "platforms": ["arduino"]
+    }
+  ]
 }
