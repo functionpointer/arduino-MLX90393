@@ -9,10 +9,10 @@
 #ifndef MLX90393_H_INCLUDED
 #define MLX90393_H_INCLUDED
 
-#include "MLX90393_i2c.h"
+#include "MLX90393Hal.h"
 
-#ifdef USE_ARDUINO
-#include "MLX90393_wire.h"
+#ifdef MLX90393_ENABLE_ARDUINO
+#include "MLX90393ArduinoHal.h"
 #include <Wire.h>
 #endif
 
@@ -88,10 +88,10 @@ public:
   uint16_t convDelayMillis();
 
   // higher-level API
-  #ifdef USE_ARDUINO
+  #ifdef MLX90393_ENABLE_ARDUINO
   uint8_t begin(uint8_t A1 = 0, uint8_t A0 = 0, int DRDY_pin = -1, TwoWire &wirePort = Wire);
   #endif
-  uint8_t begin_custom_i2c(MLX90393_i2c *i2cPort, uint8_t A1, uint8_t A0, int DRDY_pin);
+  uint8_t begin_with_hal(MLX90393Hal *hal, uint8_t A1, uint8_t A0);
 
   // returns B (x,y,z) in uT, temperature in C
   uint8_t readData(txyz& data);
@@ -121,7 +121,6 @@ public:
   uint8_t setWOTThreshold(uint16_t wot_thresh);
 
 private:
-  int DRDY_pin;
 
   // parameters are cached to avoid reading them from sensor unnecessarily
   struct cache_t {
@@ -141,10 +140,10 @@ private:
   float base_xy_sens_hc0xc;
   float base_z_sens_hc0xc;
 
-  MLX90393_i2c *i2cPort_ = nullptr;
+  MLX90393Hal *hal_ = nullptr;
 
-  #ifdef USE_ARDUINO
-  MLX909303_wire wirePort_;
+  #ifdef MLX90393_ENABLE_ARDUINO
+  MLX90393ArduinoHal arduinoHal_;
   #endif
 
 };

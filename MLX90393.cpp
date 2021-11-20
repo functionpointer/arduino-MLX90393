@@ -7,6 +7,7 @@
 //
 
 #include <MLX90393.h>
+#include <Arduino.h>
 
 MLX90393::
 MLX90393()
@@ -32,34 +33,34 @@ MLX90393()
   base_z_sens_hc0xc = 0.242f;
 }
 
-uint8_t MLX90393::begin_custom_i2c(MLX90393_i2c *i2cPort, uint8_t A1, uint8_t A0, int DRDY_pin)
+uint8_t MLX90393::begin_with_hal(MLX90393Hal *hal, uint8_t A1, uint8_t A0)
 {
-  this->i2cPort_ = i2cPort;
+  this->hal_ = hal;
   uint8_t I2C_address = I2C_BASE_ADDR | (A1?2:0) | (A0?1:0);
-  this->i2cPort_->set_address(I2C_address);
-  this->DRDY_pin = DRDY_pin;
-  if (DRDY_pin >= 0){
-    pinMode(DRDY_pin, INPUT);
-  }
+  this->hal_->set_address(I2C_address);
+  Serial.println("address set2");
 
   uint8_t status1 = checkStatus(reset());
+  Serial.println("first value");
   uint8_t status2 = setGainSel(7);
   uint8_t status3 = setResolution(0, 0, 0);
   uint8_t status4 = setOverSampling(3);
   uint8_t status5 = setDigitalFiltering(7);
   uint8_t status6 = setTemperatureCompensation(0);
+  Serial.println("values written");
 
   return status1 | status2 | status3 | status4 | status5 | status6;
 }
 
-#ifdef USE_ARDUINO
+#ifdef MLX90393_ENABLE_ARDUINO
 uint8_t
 MLX90393::
 begin(uint8_t A1, uint8_t A0, int DRDY_pin, TwoWire &wirePort)
 {
-  this->wirePort_.set_twoWire(&wirePort);
-  MLX90393_i2c *i2c = &this->wirePort_; 
-  return this->begin_custom_i2c(i2c, A1, A0, DRDY_pin);
+  this->arduinoHal_.set_twoWire(&wirePort);
+  this->arduinoHal_.set_drdy_pin(DRDY_pin);
+  MLX90393ArduinoHal *ah = &this->arduinoHal_; 
+  return this->begin_with_hal(ah, A1, A0);
 }
 #endif
 
@@ -128,7 +129,7 @@ MLX90393::
 sendCommand(uint8_t cmd)
 {
   uint8_t ret = 0;
-  if(!this->i2cPort_->transceive(&cmd, 1, &ret, 1)) {
+  if(!this->hal_->transceive(&cmd, 1, &ret, 1)) {
     return STATUS_ERROR;
   }
   return ret;
@@ -188,7 +189,7 @@ readMeasurement(uint8_t zyxt_flags, txyzRaw& txyz_result)
                        ((zyxt_flags & T_FLAG)?2:0) );
 
 
-  if(!this->i2cPort_->transceive(&cmd, 1, buffer, (size_t)count)) {
+  if(!this->hal_->transceive(&cmd, 1, buffer, (size_t)count)) {
     return STATUS_ERROR;
   }
 
@@ -227,7 +228,7 @@ readRegister(uint8_t address, uint16_t& data)
 {
   uint8_t txbuf[] = {CMD_READ_REGISTER, (uint8_t)((address & 0x3f)<<2)};
   uint8_t rxbuf[3] = {0};
-  if(!this->i2cPort_->transceive(txbuf, sizeof(txbuf), rxbuf, sizeof(rxbuf))) {
+  if(!this->hal_->transceive(txbuf, sizeof(txbuf), rxbuf, sizeof(rxbuf))) {
     return STATUS_ERROR;
   }
 
@@ -247,7 +248,7 @@ writeRegister(uint8_t address, uint16_t data)
   cache_invalidate(address);
   uint8_t txBuf[] = {CMD_WRITE_REGISTER, (uint8_t)(data & 0xff00) >> 8, (uint8_t)(data & 0x00ff), (uint8_t)((address & 0x3f)<<2)};
   uint8_t status = 0;
-  if(!this->i2cPort_->transceive(txBuf, sizeof(txBuf), &status, 1)) {
+  if(!this->hal_->transceive(txBuf, sizeof(txBuf), &status, 1)) {
     return STATUS_ERROR;
   }
 
@@ -262,10 +263,12 @@ MLX90393::
 reset()
 {
   cache_invalidate();
-
+  Serial.println("about to reset");
   uint8_t status = sendCommand(CMD_RESET);
+  Serial.println("reset done");
   //Device now resets. We must give it time to complete
-  delay(2);
+  this->hal_->sleep_millis(2);
+  Serial.println("delay done");
   // POR is 1.6ms max. Software reset time limit is not specified.
   // 2ms was found to be good.
 
@@ -389,7 +392,7 @@ convDelayMillis() {
   const uint8_t dig_flt = (cache.reg[DIG_FLT_REG] & DIG_FLT_MASK) >> DIG_FLT_SHIFT;
 
   return
-    (DRDY_pin >= 0)? 0 /* no delay if drdy pin present */ :
+    (this->hal_->has_drdy_pin()) ? 0 /* no delay if drdy pin present */ :
                      // estimate conversion time from datasheet equations
                      ( 3 * (2 + (1 << dig_flt)) * (1 << osr) *0.064f +
                       (1 << osr2) * 0.192f ) *
@@ -403,13 +406,13 @@ readData(MLX90393::txyz& data)
   uint8_t status1 = startMeasurement(X_FLAG | Y_FLAG | Z_FLAG | T_FLAG);
 
   // wait for DRDY signal if connected, otherwise delay appropriately
-  if (DRDY_pin >= 0){
-    delayMicroseconds(600);
-    while(!digitalRead(DRDY_pin)){
+  if (this->hal_->has_drdy_pin()){
+    this->hal_->sleep_micros(600);
+    while(!this->hal_->read_drdy_pin()){
       // busy wait
     }
   } else {
-    delay(this->convDelayMillis());
+    this->hal_->sleep_millis(this->convDelayMillis());
   }
 
   txyzRaw raw_txyz;
