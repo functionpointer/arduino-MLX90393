@@ -40,11 +40,11 @@ bool MLX90393ArduinoHal::read_drdy_pin() {
   return digitalRead(this->drdy_pin_) == HIGH;
 }
 
-void MLX90393ArduinoHal::sleep_millis(long millis) {
+void MLX90393ArduinoHal::sleep_millis(uint32_t millis) {
   delay(millis);
 }
 
-void MLX90393ArduinoHal::sleep_micros(long micros) {
+void MLX90393ArduinoHal::sleep_micros(uint32_t micros) {
   delayMicroseconds(micros);
 }
 
