@@ -7,7 +7,6 @@
 //
 
 #include <MLX90393.h>
-#include <Arduino.h>
 
 MLX90393::
 MLX90393()
@@ -38,16 +37,13 @@ uint8_t MLX90393::begin_with_hal(MLX90393Hal *hal, uint8_t A1, uint8_t A0)
   this->hal_ = hal;
   uint8_t I2C_address = I2C_BASE_ADDR | (A1?2:0) | (A0?1:0);
   this->hal_->set_address(I2C_address);
-  Serial.println("address set2");
 
   uint8_t status1 = checkStatus(reset());
-  Serial.println("first value");
   uint8_t status2 = setGainSel(7);
   uint8_t status3 = setResolution(0, 0, 0);
   uint8_t status4 = setOverSampling(3);
   uint8_t status5 = setDigitalFiltering(7);
   uint8_t status6 = setTemperatureCompensation(0);
-  Serial.println("values written");
 
   return status1 | status2 | status3 | status4 | status5 | status6;
 }
@@ -263,12 +259,9 @@ MLX90393::
 reset()
 {
   cache_invalidate();
-  Serial.println("about to reset");
   uint8_t status = sendCommand(CMD_RESET);
-  Serial.println("reset done");
   //Device now resets. We must give it time to complete
   this->hal_->sleep_millis(2);
-  Serial.println("delay done");
   // POR is 1.6ms max. Software reset time limit is not specified.
   // 2ms was found to be good.
 
