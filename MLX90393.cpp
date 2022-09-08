@@ -242,7 +242,7 @@ MLX90393::
 writeRegister(uint8_t address, uint16_t data)
 {
   cache_invalidate(address);
-  uint8_t txBuf[] = {CMD_WRITE_REGISTER, (uint8_t)(data & 0xff00) >> 8, (uint8_t)(data & 0x00ff), (uint8_t)((address & 0x3f)<<2)};
+  uint8_t txBuf[] = {CMD_WRITE_REGISTER, (uint8_t)((data & 0xff00)>>8), (uint8_t)(data & 0x00ff), (uint8_t)((address & 0x3f)<<2)};
   uint8_t status = 0;
   if(!this->hal_->transceive(txBuf, sizeof(txBuf), &status, 1)) {
     return STATUS_ERROR;
