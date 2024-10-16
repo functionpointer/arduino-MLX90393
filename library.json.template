@@ -25,7 +25,7 @@
   "keywords": ["sensors", "melexis"],
   "url": "https://github.com/functionpointer/arduino-MLX90393",
   "architectures" : "*",
-  "frameworks": ["Arduino", "espidf"],
+  "frameworks": "*",
   "export": {
     "exclude":
     [
