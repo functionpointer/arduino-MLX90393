@@ -3,7 +3,7 @@ Arduino library for MLX90393 magnetometer sensor.
 
 Published on platformio: https://platformio.org/lib/show/13048/arduino-MLX90393
 
-# Framworks other than arduino
+# Frameworks other than arduino
 
 This library is mostly platform agnostic.
 The only arduino specific code is encapsulated by a Hal class.
