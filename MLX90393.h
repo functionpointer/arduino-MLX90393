@@ -95,6 +95,10 @@ public:
 
   // returns B (x,y,z) in uT, temperature in C
   uint8_t readData(txyz& data);
+  // returns true when data is ready to read
+  // returns true some time after startMeasurement was called
+  // goes back to false after
+  bool isDataReady();
   uint8_t setGainSel(uint8_t gain_sel);
   uint8_t getGainSel(uint8_t& gain_sel);
   uint8_t setHallConf(uint8_t hallconf);
@@ -132,6 +136,9 @@ private:
   void cache_invalidate(uint8_t address);
   void cache_set(uint8_t address, uint16_t data);
   uint8_t cache_fill();
+
+  // used by isDataReady()
+  uint32_t end_of_conversion_millis = 0;
 
 
   float gain_multipliers[8];

@@ -392,6 +392,10 @@ convDelayMillis() {
                        1.3f;  // 30% tolerance
 }
 
+bool MLX90393::isDataReady() {
+
+}
+
 uint8_t
 MLX90393::
 readData(MLX90393::txyz& data)
