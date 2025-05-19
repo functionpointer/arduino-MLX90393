@@ -48,4 +48,8 @@ void MLX90393ArduinoHal::sleep_micros(uint32_t micros) {
   delayMicroseconds(micros);
 }
 
+uint32_t MLX90393ArduinoHal::millis() {
+  return ::millis();
+}
+
 #endif

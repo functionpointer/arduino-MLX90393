@@ -19,6 +19,7 @@
 class MLX90393
 {
 public:
+  enum { MEASUREMENT_NOT_STARTED = 0, MEASUREMENT_IN_PROGRESS = 1, MEASUREMENT_READY = 2} measurement_ready_t;
   enum { STATUS_OK = 0, STATUS_ERROR = 0xff } return_status_t;
   enum { Z_FLAG = 0x8, Y_FLAG = 0x4, X_FLAG = 0x2, T_FLAG = 0x1 } axis_flag_t;
   enum { I2C_BASE_ADDR = 0x0c };
@@ -81,7 +82,7 @@ public:
   uint8_t memoryStore();
   uint8_t nop();
   uint8_t sendCommand(uint8_t cmd);
-  uint8_t checkStatus(uint8_t status);
+  return_status_t checkStatus(uint8_t status);
   bool isOK(uint8_t status);
   bool hasError(uint8_t status);
   txyz convertRaw(txyzRaw raw);
@@ -94,7 +95,9 @@ public:
   uint8_t begin_with_hal(MLX90393Hal *hal, uint8_t A1, uint8_t A0);
 
   // returns B (x,y,z) in uT, temperature in C
-  uint8_t readData(txyz& data);
+  return_status_t readDataIfReady(txyz& data);
+  return_status_t readData(txyz& data);
+  measurement_ready_t isMeasurementReady();
   uint8_t setGainSel(uint8_t gain_sel);
   uint8_t getGainSel(uint8_t& gain_sel);
   uint8_t setHallConf(uint8_t hallconf);
@@ -132,6 +135,7 @@ private:
   void cache_invalidate(uint8_t address);
   void cache_set(uint8_t address, uint16_t data);
   uint8_t cache_fill();
+  uint32_t millis_when_conversion_finished=-1;
 
 
   float gain_multipliers[8];

@@ -98,7 +98,7 @@ cache_fill() {
   return STATUS_OK;
 }
 
-uint8_t
+return_status_t
 MLX90393::
 checkStatus(uint8_t status)
 {
@@ -169,7 +169,12 @@ startMeasurement(uint8_t zyxt_flags)
 {
   cache_fill();
   uint8_t cmd = CMD_START_MEASUREMENT | (zyxt_flags & 0xf);
-  return sendCommand(cmd);
+  uint8_t status = sendCommand(cmd);
+  if(checkStatus(status1) == STATUS_OK) {
+    //record when conversion should be finished
+    millis_when_conversion_finished = this->hal_->millis() + convDelayMillis();
+  }
+  return status;
 }
 
 uint8_t
@@ -215,6 +220,8 @@ readMeasurement(uint8_t zyxt_flags, txyzRaw& txyz_result)
     txyz_result.z = 0;
   }
 
+  //mark conversion has been read
+  millis_when_conversion_finished = 0;
   return buffer[0];
 }
 
@@ -385,14 +392,38 @@ convDelayMillis() {
   const uint8_t dig_flt = (cache.reg[DIG_FLT_REG] & DIG_FLT_MASK) >> DIG_FLT_SHIFT;
 
   return
-    (this->hal_->has_drdy_pin()) ? 0 /* no delay if drdy pin present */ :
+    (this->hal_->has_drdy_pin()) ? 1 /* 1ms delay if drdy pin present */ :
                      // estimate conversion time from datasheet equations
                      ( 3 * (2 + (1 << dig_flt)) * (1 << osr) *0.064f +
                       (1 << osr2) * 0.192f ) *
                        1.3f;  // 30% tolerance
 }
 
-uint8_t
+measurement_ready_t MLX90393::isMeasurementReady() {
+  if(millis_when_conversion_finished == -1 || millis_when_conversion_finished <= 0) {
+    return MEASUREMENT_NOT_STARTED;
+  }
+  bool ready = false;
+  if (this->hal_->has_drdy_pin()) {
+    ready = this->hal_->read_drdy_pin() && this->hal_->millis() > millis_when_conversion_finished;
+  } else {
+    ready = this->hal_->millis() > millis_when_conversion_finished;
+  }
+  return ready ? MEASUREMENT_READY : MEASUREMENT_IN_PROGRESS;
+}
+
+return_status_t MLX90393::readDataIfReady(MLX90393::txyz& data) {
+  if(isMeasurementReady() != MEASUREMENT_READY) {
+    return STATUS_ERROR;
+  }
+  txyzRaw raw_txyz;
+  uint8_t status2 =
+          readMeasurement(X_FLAG | Y_FLAG | Z_FLAG | T_FLAG, raw_txyz);
+  data = convertRaw(raw_txyz);
+  return checkStatus(status2);
+}
+
+return_status_t
 MLX90393::
 readData(MLX90393::txyz& data)
 {
@@ -400,19 +431,15 @@ readData(MLX90393::txyz& data)
 
   // wait for DRDY signal if connected, otherwise delay appropriately
   if (this->hal_->has_drdy_pin()){
-    this->hal_->sleep_micros(600);
-    while(!this->hal_->read_drdy_pin()){
+    while(!isMeasurementReady()){
       // busy wait
     }
   } else {
     this->hal_->sleep_millis(this->convDelayMillis());
   }
 
-  txyzRaw raw_txyz;
-  uint8_t status2 =
-    readMeasurement(X_FLAG | Y_FLAG | Z_FLAG | T_FLAG, raw_txyz);
-  data = convertRaw(raw_txyz);
-  return checkStatus(status1) | checkStatus(status2);
+  status2 = readDataIfReady(data);
+  return checkStatus(status1) | status2;
 }
 
 uint8_t

@@ -1,3 +1,5 @@
 *.tar.gz
 library.json
 __pycache__
+.idea
+

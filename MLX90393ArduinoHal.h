@@ -12,6 +12,7 @@ class MLX90393ArduinoHal : public MLX90393Hal {
     bool read_drdy_pin();
     void sleep_millis(uint32_t millis);
     void sleep_micros(uint32_t micros);
+    uint32_t millis();
   protected:
     TwoWire *i2cPort_ = nullptr;
 

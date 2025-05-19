@@ -21,6 +21,7 @@ class MLX90393Hal {
         virtual bool read_drdy_pin();
         virtual void sleep_millis(uint32_t millis);
         virtual void sleep_micros(uint32_t micros);
+        virtual uint32_t millis();
     protected:
         uint8_t I2C_address_ = 0;
         int drdy_pin_ = -1;
